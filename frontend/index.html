@@ -7,46 +7,114 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .stat-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-button {
+            position: relative;
+            transition: all 0.2s;
+        }
+        
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .status-dot.active {
+            background-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     <div id="app">
         <!-- Login Screen -->
-        <div v-if="!isAuthenticated" class="min-h-screen flex items-center justify-center">
-            <div class="bg-white p-8 rounded-lg shadow-lg w-96">
-                <div class="text-center mb-6">
-                    <h1 class="text-2xl font-bold text-gray-900">Mesh Lead Agent</h1>
-                    <p class="text-sm text-gray-600 mt-2">Account Executive Agent - CMO Department</p>
+        <div v-if="!isAuthenticated" class="min-h-screen flex items-center justify-center p-4">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Mesh Lead Agent</h1>
+                    <p class="text-sm text-gray-600">Account Executive Agent Dashboard</p>
+                    <p class="text-xs text-gray-500 mt-1">CMO Department</p>
                 </div>
                 
-                <form @submit.prevent="login" class="space-y-4">
+                <form @submit.prevent="login" class="space-y-5">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Username</label>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
                         <input 
                             v-model="loginForm.username" 
                             type="text" 
                             required
-                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter your username"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                         >
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Password</label>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
                         <input 
                             v-model="loginForm.password" 
                             type="password" 
                             required
-                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter your password"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                         >
                     </div>
                     
                     <button 
                         type="submit"
-                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition shadow-md"
                     >
                         Sign In
                     </button>
                     
-                    <div v-if="error" class="text-red-600 text-sm text-center">
+                    <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm text-center">
                         {{ error }}
                     </div>
                 </form>
@@ -81,48 +149,64 @@
             <!-- Main Content -->
             <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <!-- Tabs -->
-                <div class="border-b border-gray-200 mb-6">
-                    <nav class="-mb-px flex space-x-8">
+                <div class="bg-white rounded-xl shadow-sm p-2 mb-8">
+                    <nav class="flex space-x-1">
                         <button 
                             @click="activeTab = 'dashboard'"
-                            :class="activeTab === 'dashboard' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                            :class="[activeTab === 'dashboard' ? 'bg-blue-50 text-blue-700 active' : 'text-gray-600 hover:bg-gray-50']"
+                            class="tab-button flex items-center px-6 py-3 rounded-lg font-medium text-sm transition"
                         >
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
                             Dashboard
                         </button>
                         <button 
                             @click="activeTab = 'test'"
-                            :class="activeTab === 'test' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                            :class="[activeTab === 'test' ? 'bg-blue-50 text-blue-700 active' : 'text-gray-600 hover:bg-gray-50']"
+                            class="tab-button flex items-center px-6 py-3 rounded-lg font-medium text-sm transition"
                         >
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
                             Test Email
                         </button>
                         <button 
                             @click="activeTab = 'credentials'"
-                            :class="activeTab === 'credentials' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                            :class="[activeTab === 'credentials' ? 'bg-blue-50 text-blue-700 active' : 'text-gray-600 hover:bg-gray-50']"
+                            class="tab-button flex items-center px-6 py-3 rounded-lg font-medium text-sm transition"
                         >
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                            </svg>
                             Credentials
                         </button>
                         <button 
                             @click="activeTab = 'activity'"
-                            :class="activeTab === 'activity' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                            :class="[activeTab === 'activity' ? 'bg-blue-50 text-blue-700 active' : 'text-gray-600 hover:bg-gray-50']"
+                            class="tab-button flex items-center px-6 py-3 rounded-lg font-medium text-sm transition"
                         >
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
                             Activity Log
                         </button>
                         <button 
                             @click="activeTab = 'settings'"
-                            :class="activeTab === 'settings' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                            :class="[activeTab === 'settings' ? 'bg-blue-50 text-blue-700 active' : 'text-gray-600 hover:bg-gray-50']"
+                            class="tab-button flex items-center px-6 py-3 rounded-lg font-medium text-sm transition"
                         >
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
                             Settings
                         </button>
                     </nav>
                 </div>
 
                 <!-- Dashboard Tab -->
-                <div v-if="activeTab === 'dashboard'" class="space-y-6">
+                <div v-if="activeTab === 'dashboard'" class="space-y-8 fade-in">
                     <!-- Stats Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div class="bg-white p-6 rounded-lg shadow">
@@ -168,7 +252,8 @@
                 </div>
 
                 <!-- Test Email Tab -->
-                <div v-if="activeTab === 'test'" class="bg-white p-6 rounded-lg shadow">
+                <div v-if="activeTab === 'test'" class="fade-in">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Test Email Processing</h3>
                     <p class="text-sm text-gray-600 mb-4">Paste an Unbounce email notification to test the system</p>
                     
@@ -201,7 +286,7 @@
                 </div>
 
                 <!-- Credentials Tab -->
-                <div v-if="activeTab === 'credentials'" class="space-y-6">
+                <div v-if="activeTab === 'credentials'" class="fade-in space-y-6">
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">API Credentials</h3>
                         
@@ -251,7 +336,8 @@
                 </div>
 
                 <!-- Activity Log Tab -->
-                <div v-if="activeTab === 'activity'" class="bg-white p-6 rounded-lg shadow">
+                <div v-if="activeTab === 'activity'" class="fade-in">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
                     <div class="space-y-3">
                         <div v-for="activity in activities" :key="activity.id" class="border-l-4 pl-4 py-2" :class="getActivityColor(activity.status)">
@@ -273,7 +359,8 @@
                 </div>
 
                 <!-- Settings Tab -->
-                <div v-if="activeTab === 'settings'" class="bg-white p-6 rounded-lg shadow max-w-2xl">
+                <div v-if="activeTab === 'settings'" class="fade-in max-w-2xl">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <h3 class="text-lg font-medium text-gray-900 mb-6">Account Settings</h3>
                     
                     <!-- Change Password Form -->
