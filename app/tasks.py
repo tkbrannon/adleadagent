@@ -38,6 +38,26 @@ def process_lead(lead_data: Dict[str, Any]) -> str:
         email_received_at = datetime.fromisoformat(lead_data['email_received_at'])
         redis_client.store_lead_timestamp(lead_data['phone'], email_received_at)
         
+        # Calculate speed to lead
+        speed_to_lead = (call_initiated_at - email_received_at).total_seconds()
+        
+        # IMPORTANT: Store call data in Redis BEFORE initiating call
+        # This prevents race condition where webhook is called before data is available
+        # We'll use a temporary call_sid placeholder that will be updated after call creation
+        temp_call_data = {
+            "name": lead_data['fname'],
+            "email": lead_data['email'],
+            "phone": lead_data['phone'],
+            "office_space_interest": lead_data.get('what_kind_of_office_space_are_you_interested_in', 'Other'),
+            "message": lead_data.get('message', ''),
+            "campaign_id": lead_data.get('campaignid', ''),
+            "email_received_at": email_received_at.isoformat(),
+            "call_initiated_at": call_initiated_at.isoformat(),
+            "speed_to_lead_seconds": speed_to_lead,
+            "page_name": lead_data.get('page_name', 'Mesh Cowork - Private Offices'),
+            "page_url": lead_data.get('page_url', 'http://tour.meshcowork.com/private-offices/')
+        }
+        
         # Initiate Twilio call
         call_sid = twilio_service.initiate_call(
             to_number=lead_data['phone'],
@@ -67,8 +87,8 @@ def process_lead(lead_data: Dict[str, Any]) -> str:
             airtable_service.create_lead_record(lead_record)
             return "CALL_FAILED"
         
-        # Calculate speed to lead
-        speed_to_lead = (call_initiated_at - email_received_at).total_seconds()
+        # Now store call data with actual call_sid
+        redis_client.store_call_data(call_sid, temp_call_data)
         
         # Log activity to database
         db = SessionLocal()
@@ -88,21 +108,6 @@ def process_lead(lead_data: Dict[str, Any]) -> str:
             logger.error(f"Failed to log activity: {e}")
         finally:
             db.close()
-        
-        # Store call data in Redis for webhook access
-        redis_client.store_call_data(call_sid, {
-            "name": lead_data['fname'],
-            "email": lead_data['email'],
-            "phone": lead_data['phone'],
-            "office_space_interest": lead_data.get('what_kind_of_office_space_are_you_interested_in', 'Other'),
-            "message": lead_data.get('message', ''),
-            "campaign_id": lead_data.get('campaignid', ''),
-            "email_received_at": email_received_at.isoformat(),
-            "call_initiated_at": call_initiated_at.isoformat(),
-            "speed_to_lead_seconds": speed_to_lead,
-            "page_name": lead_data.get('page_name', 'Mesh Cowork - Private Offices'),
-            "page_url": lead_data.get('page_url', 'http://tour.meshcowork.com/private-offices/')
-        })
         
         logger.info(f"Call initiated: {call_sid} | Speed to lead: {speed_to_lead:.2f}s")
         return call_sid
