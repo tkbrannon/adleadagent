@@ -18,8 +18,13 @@ python scripts/create_admin.py || echo "Admin user already exists or creation fa
 # Start Celery worker in background
 celery -A app.celery_app worker --loglevel=info --concurrency=2 &
 
-# Start Gmail poller in background (commented out - use UI test email instead)
-# python poller.py &
+# Start Gmail poller in background (if app password is configured)
+if [ -n "$GMAIL_APP_PASSWORD" ]; then
+  echo "Starting Gmail poller..."
+  python poller.py &
+else
+  echo "Gmail poller disabled - use Test Email tab in dashboard"
+fi
 
 # Start FastAPI (foreground)
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000
