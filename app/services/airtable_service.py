@@ -22,44 +22,23 @@ class AirtableService:
     def create_lead_record(self, lead: LeadRecord) -> Optional[str]:
         """Create a new lead record in Airtable"""
         try:
-            # Prepare record data
+            # Prepare record data - matching exact Airtable field names
             record_data = {
-                "Name": lead.name,
+                "Lead Name": lead.name,
                 "Email": lead.email,
                 "Phone": lead.phone,
-                "Office Space Interest": lead.office_space_interest,
-                "Message": lead.message or "",
-                "Campaign ID": lead.campaign_id or "",
-                
-                # Call data
-                "Call SID": lead.call_sid or "",
-                "Call Status": lead.call_status or "",
-                "Call Duration (seconds)": lead.call_duration or 0,
-                
-                # Qualification
-                "Qualification Status": lead.qualification_status.value,
-                "Qualification Reason": lead.qualification_reason or "",
-                
-                # Timing
-                "Email Received At": lead.email_received_at.isoformat(),
-                "Call Initiated At": lead.call_initiated_at.isoformat() if lead.call_initiated_at else "",
-                "Call Completed At": lead.call_completed_at.isoformat() if lead.call_completed_at else "",
-                "SMS Sent At": lead.sms_sent_at.isoformat() if lead.sms_sent_at else "",
-                "Speed to Lead (seconds)": lead.speed_to_lead_seconds or 0,
-                
-                # Metadata
-                "Page Name": lead.page_name,
-                "Page URL": lead.page_url,
-                "Created At": lead.created_at.isoformat(),
+                "Status": lead.qualification_status.value,
+                "Notes": lead.qualification_reason or "",
+                "Source": lead.page_name,
             }
             
             # Add call answers if available
             if lead.call_answers:
                 record_data["Years in Business"] = lead.call_answers.get("q1", "")
-                record_data["Number of Employees"] = lead.call_answers.get("q2", "")
+                record_data["Team Size"] = lead.call_answers.get("q2", "")
                 record_data["Has Clients"] = lead.call_answers.get("q3", "")
                 record_data["Budget"] = lead.call_answers.get("q4", "")
-                record_data["Office Preference"] = lead.call_answers.get("q5", "")
+                record_data["Space Type"] = lead.call_answers.get("q5", "")
             
             # Create record
             record = self.table.create(record_data)
