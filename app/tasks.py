@@ -150,7 +150,7 @@ def send_followup_sms(phone: str, name: str, qualified: bool = True) -> bool:
                 lead_name=name,
                 lead_phone=phone,
                 status="success" if success else "failed",
-                details=f"Follow-up SMS {'sent' if success else 'failed'}",
+                details=f"Follow-up SMS {'sent' if success else 'failed'}. {'A2P registration may be pending.' if not success else ''}",
                 timestamp=datetime.utcnow()
             )
             db.add(activity)
@@ -163,7 +163,7 @@ def send_followup_sms(phone: str, name: str, qualified: bool = True) -> bool:
         if success:
             logger.info(f"SMS sent to {phone}")
         else:
-            logger.error(f"Failed to send SMS to {phone}")
+            logger.warning(f"SMS failed to {phone} - A2P campaign may still be under review")
         
         return success
     
