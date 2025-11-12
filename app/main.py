@@ -95,6 +95,35 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     return {"message": "User created successfully", "username": user.username}
 
 
+@app.post("/api/auth/change-password")
+async def change_password(
+    username: str = Form(...),
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Change user password"""
+    from app.database import User
+    from app.auth import verify_password, get_password_hash
+    
+    # Authenticate with current password
+    user = authenticate_user(db, username, current_password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    
+    # Validate new password
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+    
+    # Update password
+    user.hashed_password = get_password_hash(new_password)
+    db.commit()
+    
+    logger.info(f"Password changed for user: {username}")
+    
+    return {"message": "Password changed successfully"}
+
+
 @app.get("/health")
 async def health_check():
     """Detailed health check"""

@@ -37,7 +37,6 @@ def create_admin():
         print("✅ Admin user created successfully!")
         print(f"   Username: {user.username}")
         print(f"   Email: {user.email}")
-        print(f"   Password: admin123")
         print("\n⚠️  IMPORTANT: Change the password after first login!")
     
     except Exception as e:

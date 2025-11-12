@@ -52,7 +52,7 @@
                 </form>
                 
                 <div class="mt-6 text-center">
-                    <p class="text-xs text-gray-500">First time? Use default: admin / admin123</p>
+                    <p class="text-xs text-gray-500">Contact your administrator for login credentials</p>
                 </div>
             </div>
         </div>
@@ -110,6 +110,13 @@
                             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
                         >
                             Activity Log
+                        </button>
+                        <button 
+                            @click="activeTab = 'settings'"
+                            :class="activeTab === 'settings' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                        >
+                            Settings
                         </button>
                     </nav>
                 </div>
@@ -264,6 +271,61 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Settings Tab -->
+                <div v-if="activeTab === 'settings'" class="bg-white p-6 rounded-lg shadow max-w-2xl">
+                    <h3 class="text-lg font-medium text-gray-900 mb-6">Account Settings</h3>
+                    
+                    <!-- Change Password Form -->
+                    <div class="mb-8">
+                        <h4 class="text-md font-medium text-gray-900 mb-4">Change Password</h4>
+                        <form @submit.prevent="changePassword" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Current Password</label>
+                                <input 
+                                    v-model="passwordForm.current" 
+                                    type="password" 
+                                    required
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                >
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">New Password</label>
+                                <input 
+                                    v-model="passwordForm.new" 
+                                    type="password" 
+                                    required
+                                    minlength="8"
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                <p class="mt-1 text-xs text-gray-500">Must be at least 8 characters</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                                <input 
+                                    v-model="passwordForm.confirm" 
+                                    type="password" 
+                                    required
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                >
+                            </div>
+                            
+                            <div v-if="passwordMessage" :class="passwordSuccess ? 'text-green-600' : 'text-red-600'" class="text-sm">
+                                {{ passwordMessage }}
+                            </div>
+                            
+                            <button 
+                                type="submit"
+                                :disabled="submitting"
+                                class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                            >
+                                {{ submitting ? 'Changing...' : 'Change Password' }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
@@ -303,7 +365,14 @@
                         credential_key: '',
                         value: ''
                     },
-                    activities: []
+                    activities: [],
+                    passwordForm: {
+                        current: '',
+                        new: '',
+                        confirm: ''
+                    },
+                    passwordMessage: '',
+                    passwordSuccess: false
                 }
             },
             mounted() {
@@ -462,6 +531,48 @@
                 },
                 formatDate(timestamp) {
                     return new Date(timestamp).toLocaleString();
+                },
+                async changePassword() {
+                    this.passwordMessage = '';
+                    this.passwordSuccess = false;
+                    
+                    // Validate passwords match
+                    if (this.passwordForm.new !== this.passwordForm.confirm) {
+                        this.passwordMessage = 'New passwords do not match';
+                        return;
+                    }
+                    
+                    // Validate password length
+                    if (this.passwordForm.new.length < 8) {
+                        this.passwordMessage = 'Password must be at least 8 characters';
+                        return;
+                    }
+                    
+                    this.submitting = true;
+                    
+                    try {
+                        const formData = new FormData();
+                        formData.append('username', this.user.username);
+                        formData.append('current_password', this.passwordForm.current);
+                        formData.append('new_password', this.passwordForm.new);
+                        
+                        await axios.post('/api/auth/change-password', formData);
+                        
+                        this.passwordMessage = 'Password changed successfully!';
+                        this.passwordSuccess = true;
+                        
+                        // Clear form
+                        this.passwordForm = {
+                            current: '',
+                            new: '',
+                            confirm: ''
+                        };
+                    } catch (error) {
+                        this.passwordMessage = error.response?.data?.detail || 'Failed to change password';
+                        this.passwordSuccess = false;
+                    } finally {
+                        this.submitting = false;
+                    }
                 }
             }
         }).mount('#app');
