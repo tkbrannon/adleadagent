@@ -166,14 +166,18 @@ async def call_start(request: Request):
 
 
 @app.post("/webhooks/twilio/question/{question_id}", response_class=PlainTextResponse)
-async def ask_question(question_id: str):
+async def ask_question(
+    question_id: str,
+    CallSid: str = Form(None),
+    retry: int = 0
+):
     """
     Ask a specific qualification question
     Returns TwiML with Gather for speech recognition
     """
     try:
-        logger.info(f"Asking question: {question_id}")
-        return twiml_generator.ask_question(question_id)
+        logger.info(f"Asking question: {question_id} (retry: {retry})")
+        return twiml_generator.ask_question(question_id, CallSid, retry)
     
     except Exception as e:
         logger.error(f"Error asking question {question_id}: {e}")
@@ -185,18 +189,22 @@ async def process_answer(
     question_id: str,
     CallSid: str = Form(...),
     SpeechResult: str = Form(None),
-    Confidence: float = Form(None)
+    Confidence: float = Form(None),
+    skip: bool = False
 ):
     """
     Process answer from speech recognition
     Store answer and move to next question
     """
     try:
-        logger.info(f"Answer received for {question_id}: {SpeechResult} (confidence: {Confidence})")
-        
-        # Store answer in Redis
-        if SpeechResult:
-            redis_client.update_call_answer(CallSid, question_id, SpeechResult)
+        if skip:
+            logger.info(f"Skipping question {question_id} after max retries")
+        else:
+            logger.info(f"Answer received for {question_id}: {SpeechResult} (confidence: {Confidence})")
+            
+            # Store answer in Redis
+            if SpeechResult:
+                redis_client.update_call_answer(CallSid, question_id, SpeechResult)
         
         # Move to next question
         return twiml_generator.next_question(question_id)

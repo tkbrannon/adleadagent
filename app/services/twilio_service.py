@@ -97,7 +97,7 @@ class TwiMLGenerator:
         return str(response)
     
     @staticmethod
-    def ask_question(question_id: str) -> str:
+    def ask_question(question_id: str, call_sid: str = None, retry_count: int = 0) -> str:
         """Ask a qualification question with speech recognition"""
         response = VoiceResponse()
         
@@ -111,7 +111,7 @@ class TwiMLGenerator:
         
         gather = Gather(
             input="speech",
-            action=f"{settings.public_webhook_url}/webhooks/twilio/answer/{question_id}",
+            action=f"{settings.public_webhook_url}/webhooks/twilio/answer/{question_id}?retry={retry_count}",
             method="POST",
             timeout=5,
             speech_timeout="auto",
@@ -121,12 +121,20 @@ class TwiMLGenerator:
         gather.say(question_text, voice=settings.twilio_voice)
         response.append(gather)
         
-        # If no input, repeat question once
-        response.say(
-            "I didn't catch that. Let me ask again.",
-            voice=settings.twilio_voice
-        )
-        response.redirect(f"{settings.public_webhook_url}/webhooks/twilio/question/{question_id}")
+        # If no input, retry once then skip
+        if retry_count < 1:
+            response.say(
+                "I didn't catch that. Let me ask again.",
+                voice=settings.twilio_voice
+            )
+            response.redirect(f"{settings.public_webhook_url}/webhooks/twilio/question/{question_id}?retry={retry_count + 1}")
+        else:
+            # Max retries reached, move to next question
+            response.say(
+                "I'll skip that question for now.",
+                voice=settings.twilio_voice
+            )
+            response.redirect(f"{settings.public_webhook_url}/webhooks/twilio/answer/{question_id}?skip=true")
         
         return str(response)
     
