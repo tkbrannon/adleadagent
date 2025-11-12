@@ -208,6 +208,19 @@ def finalize_lead_record(call_sid: str, call_status: str, call_duration: int = 0
         # Create lead record
         call_completed_at = datetime.utcnow()
         
+        # Parse datetime fields safely
+        email_received_at = call_data.get("email_received_at")
+        if isinstance(email_received_at, str):
+            email_received_at = datetime.fromisoformat(email_received_at)
+        elif not isinstance(email_received_at, datetime):
+            email_received_at = datetime.utcnow()
+        
+        call_initiated_at = call_data.get("call_initiated_at")
+        if isinstance(call_initiated_at, str):
+            call_initiated_at = datetime.fromisoformat(call_initiated_at)
+        elif not isinstance(call_initiated_at, datetime):
+            call_initiated_at = datetime.utcnow()
+        
         lead_record = LeadRecord(
             name=call_data.get("name", ""),
             email=call_data.get("email", ""),
@@ -221,8 +234,8 @@ def finalize_lead_record(call_sid: str, call_status: str, call_duration: int = 0
             call_answers=call_answers,
             qualification_status=qualification_status,
             qualification_reason=qualification_reason,
-            email_received_at=datetime.fromisoformat(call_data.get("email_received_at")),
-            call_initiated_at=datetime.fromisoformat(call_data.get("call_initiated_at")),
+            email_received_at=email_received_at,
+            call_initiated_at=call_initiated_at,
             call_completed_at=call_completed_at,
             speed_to_lead_seconds=float(call_data.get("speed_to_lead_seconds", 0)),
             page_name=call_data.get("page_name", "Mesh Cowork - Private Offices"),

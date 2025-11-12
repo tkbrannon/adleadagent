@@ -24,7 +24,7 @@ class AirtableService:
         try:
             # Prepare record data - matching exact Airtable field names
             record_data = {
-                "Lead Name": lead.name,
+                "Name": lead.name,
                 "Email": lead.email,
                 "Phone": lead.phone,
                 "Status": lead.qualification_status.value,
