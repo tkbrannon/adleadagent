@@ -2,6 +2,7 @@
 from datetime import datetime
 from typing import Dict, Any
 from loguru import logger
+import uuid
 
 from app.celery_app import celery_app
 from app.models import LeadRecord, LeadQualification
@@ -11,6 +12,7 @@ from app.services import (
     redis_client
 )
 from app.config import get_settings
+from app.database import SessionLocal, AgentActivity
 
 settings = get_settings()
 
@@ -68,6 +70,25 @@ def process_lead(lead_data: Dict[str, Any]) -> str:
         # Calculate speed to lead
         speed_to_lead = (call_initiated_at - email_received_at).total_seconds()
         
+        # Log activity to database
+        db = SessionLocal()
+        try:
+            activity = AgentActivity(
+                id=str(uuid.uuid4()),
+                activity_type="call_made",
+                lead_name=lead_data['fname'],
+                lead_phone=lead_data['phone'],
+                status="initiated",
+                details=f"Call initiated: {call_sid}",
+                timestamp=call_initiated_at
+            )
+            db.add(activity)
+            db.commit()
+        except Exception as e:
+            logger.error(f"Failed to log activity: {e}")
+        finally:
+            db.close()
+        
         # Store call data in Redis for webhook access
         redis_client.store_call_data(call_sid, {
             "name": lead_data['fname'],
@@ -119,6 +140,25 @@ def send_followup_sms(phone: str, name: str, qualified: bool = True) -> bool:
             )
         
         success = twilio_service.send_sms(phone, message)
+        
+        # Log activity to database
+        db = SessionLocal()
+        try:
+            activity = AgentActivity(
+                id=str(uuid.uuid4()),
+                activity_type="sms_sent",
+                lead_name=name,
+                lead_phone=phone,
+                status="success" if success else "failed",
+                details=f"Follow-up SMS {'sent' if success else 'failed'}",
+                timestamp=datetime.utcnow()
+            )
+            db.add(activity)
+            db.commit()
+        except Exception as e:
+            logger.error(f"Failed to log SMS activity: {e}")
+        finally:
+            db.close()
         
         if success:
             logger.info(f"SMS sent to {phone}")
@@ -203,6 +243,25 @@ def finalize_lead_record(call_sid: str, call_status: str, call_duration: int = 0
             name=lead_record.name,
             qualified=(qualification_status == LeadQualification.QUALIFIED)
         )
+        
+        # Log lead processing completion
+        db = SessionLocal()
+        try:
+            activity = AgentActivity(
+                id=str(uuid.uuid4()),
+                activity_type="lead_processed",
+                lead_name=lead_record.name,
+                lead_phone=lead_record.phone,
+                status="qualified" if qualification_status == LeadQualification.QUALIFIED else "not_qualified",
+                details=f"Lead finalized: {qualification_reason}. Airtable: {'saved' if record_id else 'failed'}",
+                timestamp=datetime.utcnow()
+            )
+            db.add(activity)
+            db.commit()
+        except Exception as e:
+            logger.error(f"Failed to log lead processing activity: {e}")
+        finally:
+            db.close()
         
         logger.info(f"Lead processing completed for {call_sid}")
         return True
