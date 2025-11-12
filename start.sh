@@ -14,8 +14,8 @@ echo "Redis is ready!"
 # Start Celery worker in background
 celery -A app.celery_app worker --loglevel=info --concurrency=2 &
 
-# Start Gmail poller in background
-python poller.py &
+# Start Gmail poller in background (commented out - use UI test email instead)
+# python poller.py &
 
 # Start FastAPI (foreground)
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000
