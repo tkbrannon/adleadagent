@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     twilio_account_sid: str
     twilio_auth_token: str
     twilio_phone_number: str
-    twilio_voice: str = "Polly.Joanna"
+    twilio_voice: str = "Polly.Matthew-Neural"  # More natural neural voice
     
     # Airtable
     airtable_api_key: str
