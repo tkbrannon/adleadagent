@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesh Lead Agent - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div id="app">
+        <!-- Login Screen -->
+        <div v-if="!isAuthenticated" class="min-h-screen flex items-center justify-center">
+            <div class="bg-white p-8 rounded-lg shadow-lg w-96">
+                <div class="text-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900">Mesh Lead Agent</h1>
+                    <p class="text-sm text-gray-600 mt-2">Account Executive Agent - CMO Department</p>
+                </div>
+                
+                <form @submit.prevent="login" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Username</label>
+                        <input 
+                            v-model="loginForm.username" 
+                            type="text" 
+                            required
+                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Password</label>
+                        <input 
+                            v-model="loginForm.password" 
+                            type="password" 
+                            required
+                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                    </div>
+                    
+                    <button 
+                        type="submit"
+                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                        Sign In
+                    </button>
+                    
+                    <div v-if="error" class="text-red-600 text-sm text-center">
+                        {{ error }}
+                    </div>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-xs text-gray-500">First time? Use default: admin / admin123</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div v-else class="min-h-screen">
+            <!-- Header -->
+            <header class="bg-white shadow">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Lead Qualification Agent</h1>
+                        <p class="text-sm text-gray-600">Account Executive - CMO Department</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-700">{{ user.username }}</span>
+                        <button 
+                            @click="logout"
+                            class="text-sm text-red-600 hover:text-red-800"
+                        >
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Tabs -->
+                <div class="border-b border-gray-200 mb-6">
+                    <nav class="-mb-px flex space-x-8">
+                        <button 
+                            @click="activeTab = 'dashboard'"
+                            :class="activeTab === 'dashboard' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                        >
+                            Dashboard
+                        </button>
+                        <button 
+                            @click="activeTab = 'test'"
+                            :class="activeTab === 'test' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                        >
+                            Test Email
+                        </button>
+                        <button 
+                            @click="activeTab = 'credentials'"
+                            :class="activeTab === 'credentials' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                        >
+                            Credentials
+                        </button>
+                        <button 
+                            @click="activeTab = 'activity'"
+                            :class="activeTab === 'activity' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                        >
+                            Activity Log
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Dashboard Tab -->
+                <div v-if="activeTab === 'dashboard'" class="space-y-6">
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <div class="text-sm font-medium text-gray-600">Total Leads</div>
+                            <div class="text-3xl font-bold text-gray-900 mt-2">{{ stats.total_leads_processed }}</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <div class="text-sm font-medium text-gray-600">Calls Today</div>
+                            <div class="text-3xl font-bold text-blue-600 mt-2">{{ stats.calls_made_today }}</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <div class="text-sm font-medium text-gray-600">SMS Sent</div>
+                            <div class="text-3xl font-bold text-green-600 mt-2">{{ stats.sms_sent_today }}</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <div class="text-sm font-medium text-gray-600">Qualified</div>
+                            <div class="text-3xl font-bold text-purple-600 mt-2">{{ stats.qualified_leads }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Agent Status -->
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Agent Status</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-sm text-gray-600">Status:</span>
+                                <span class="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    {{ health.status }}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Redis:</span>
+                                <span class="ml-2 text-sm font-medium" :class="health.redis === 'connected' ? 'text-green-600' : 'text-red-600'">
+                                    {{ health.redis }}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Avg Speed-to-Lead:</span>
+                                <span class="ml-2 text-sm font-medium text-gray-900">{{ stats.average_speed_to_lead }}s</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Email Tab -->
+                <div v-if="activeTab === 'test'" class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Test Email Processing</h3>
+                    <p class="text-sm text-gray-600 mb-4">Paste an Unbounce email notification to test the system</p>
+                    
+                    <form @submit.prevent="submitTestEmail" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Content</label>
+                            <textarea 
+                                v-model="testEmail"
+                                rows="15"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                                placeholder="Paste Unbounce email here..."
+                            ></textarea>
+                        </div>
+                        
+                        <button 
+                            type="submit"
+                            :disabled="!testEmail || submitting"
+                            class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        >
+                            {{ submitting ? 'Processing...' : 'Process Test Email' }}
+                        </button>
+                        
+                        <div v-if="testResult" class="mt-4 p-4 rounded-md" :class="testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+                            <p class="text-sm font-medium" :class="testResult.success ? 'text-green-800' : 'text-red-800'">
+                                {{ testResult.message }}
+                            </p>
+                            <pre v-if="testResult.data" class="mt-2 text-xs text-gray-700 overflow-auto">{{ JSON.stringify(testResult.data, null, 2) }}</pre>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Credentials Tab -->
+                <div v-if="activeTab === 'credentials'" class="space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">API Credentials</h3>
+                        
+                        <!-- Add/Update Credential Form -->
+                        <form @submit.prevent="saveCredential" class="space-y-4 mb-6">
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Service</label>
+                                    <select v-model="credentialForm.service_name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                                        <option value="gmail">Gmail</option>
+                                        <option value="twilio">Twilio</option>
+                                        <option value="airtable">Airtable</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Key Name</label>
+                                    <input v-model="credentialForm.credential_key" type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="e.g., api_key">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Value</label>
+                                    <input v-model="credentialForm.value" type="password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Enter value">
+                                </div>
+                            </div>
+                            <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                                Save Credential
+                            </button>
+                        </form>
+
+                        <!-- Credentials List -->
+                        <div class="border-t pt-4">
+                            <h4 class="text-sm font-medium text-gray-900 mb-3">Stored Credentials</h4>
+                            <div class="space-y-2">
+                                <div v-for="cred in credentials" :key="cred.id" class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                                    <div>
+                                        <span class="font-medium text-sm">{{ cred.service_name }}</span>
+                                        <span class="text-gray-500 text-sm mx-2">•</span>
+                                        <span class="text-sm text-gray-600">{{ cred.credential_key }}</span>
+                                        <span class="text-gray-400 text-xs ml-2">{{ cred.masked_value }}</span>
+                                    </div>
+                                    <button @click="deleteCredential(cred.id)" class="text-red-600 hover:text-red-800 text-sm">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Log Tab -->
+                <div v-if="activeTab === 'activity'" class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
+                    <div class="space-y-3">
+                        <div v-for="activity in activities" :key="activity.id" class="border-l-4 pl-4 py-2" :class="getActivityColor(activity.status)">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ activity.activity_type }}</p>
+                                    <p v-if="activity.lead_name" class="text-sm text-gray-600">{{ activity.lead_name }} - {{ activity.lead_phone }}</p>
+                                    <p v-if="activity.details" class="text-xs text-gray-500 mt-1">{{ activity.details }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs px-2 py-1 rounded-full" :class="getStatusBadge(activity.status)">
+                                        {{ activity.status }}
+                                    </span>
+                                    <p class="text-xs text-gray-500 mt-1">{{ formatDate(activity.timestamp) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    isAuthenticated: false,
+                    user: null,
+                    token: null,
+                    activeTab: 'dashboard',
+                    loginForm: {
+                        username: '',
+                        password: ''
+                    },
+                    error: '',
+                    stats: {
+                        total_leads_processed: 0,
+                        calls_made_today: 0,
+                        sms_sent_today: 0,
+                        qualified_leads: 0,
+                        average_speed_to_lead: 0
+                    },
+                    health: {
+                        status: 'unknown',
+                        redis: 'unknown'
+                    },
+                    testEmail: '',
+                    testResult: null,
+                    submitting: false,
+                    credentials: [],
+                    credentialForm: {
+                        service_name: 'gmail',
+                        credential_key: '',
+                        value: ''
+                    },
+                    activities: []
+                }
+            },
+            mounted() {
+                // Check for existing token
+                const token = localStorage.getItem('token');
+                if (token) {
+                    this.token = token;
+                    this.isAuthenticated = true;
+                    this.loadDashboard();
+                }
+            },
+            methods: {
+                async login() {
+                    try {
+                        const formData = new FormData();
+                        formData.append('username', this.loginForm.username);
+                        formData.append('password', this.loginForm.password);
+
+                        const response = await axios.post('/api/auth/login', formData);
+                        
+                        this.token = response.data.access_token;
+                        localStorage.setItem('token', this.token);
+                        this.isAuthenticated = true;
+                        this.user = { username: this.loginForm.username };
+                        this.error = '';
+                        
+                        this.loadDashboard();
+                    } catch (error) {
+                        this.error = error.response?.data?.detail || 'Login failed';
+                    }
+                },
+                logout() {
+                    localStorage.removeItem('token');
+                    this.isAuthenticated = false;
+                    this.token = null;
+                    this.user = null;
+                },
+                async loadDashboard() {
+                    await Promise.all([
+                        this.loadStats(),
+                        this.loadHealth(),
+                        this.loadCredentials(),
+                        this.loadActivity()
+                    ]);
+                },
+                async loadStats() {
+                    try {
+                        const response = await axios.get('/api/admin/stats', {
+                            headers: { 'Authorization': `Bearer ${this.token}` }
+                        });
+                        this.stats = response.data;
+                    } catch (error) {
+                        console.error('Failed to load stats:', error);
+                    }
+                },
+                async loadHealth() {
+                    try {
+                        const response = await axios.get('/api/admin/health', {
+                            headers: { 'Authorization': `Bearer ${this.token}` }
+                        });
+                        this.health = response.data;
+                    } catch (error) {
+                        console.error('Failed to load health:', error);
+                    }
+                },
+                async submitTestEmail() {
+                    this.submitting = true;
+                    this.testResult = null;
+                    
+                    try {
+                        const response = await axios.post('/api/admin/test-email', 
+                            { email_content: this.testEmail },
+                            { headers: { 'Authorization': `Bearer ${this.token}` }}
+                        );
+                        
+                        this.testResult = {
+                            success: true,
+                            message: response.data.message,
+                            data: response.data.parsed_lead
+                        };
+                    } catch (error) {
+                        this.testResult = {
+                            success: false,
+                            message: error.response?.data?.detail || 'Failed to process email'
+                        };
+                    } finally {
+                        this.submitting = false;
+                    }
+                },
+                async loadCredentials() {
+                    try {
+                        const response = await axios.get('/api/admin/credentials', {
+                            headers: { 'Authorization': `Bearer ${this.token}` }
+                        });
+                        this.credentials = response.data;
+                    } catch (error) {
+                        console.error('Failed to load credentials:', error);
+                    }
+                },
+                async saveCredential() {
+                    try {
+                        await axios.post('/api/admin/credentials', this.credentialForm, {
+                            headers: { 'Authorization': `Bearer ${this.token}` }
+                        });
+                        
+                        this.credentialForm = {
+                            service_name: 'gmail',
+                            credential_key: '',
+                            value: ''
+                        };
+                        
+                        await this.loadCredentials();
+                    } catch (error) {
+                        alert('Failed to save credential: ' + (error.response?.data?.detail || 'Unknown error'));
+                    }
+                },
+                async deleteCredential(id) {
+                    if (!confirm('Delete this credential?')) return;
+                    
+                    try {
+                        await axios.delete(`/api/admin/credentials/${id}`, {
+                            headers: { 'Authorization': `Bearer ${this.token}` }
+                        });
+                        await this.loadCredentials();
+                    } catch (error) {
+                        alert('Failed to delete credential');
+                    }
+                },
+                async loadActivity() {
+                    try {
+                        const response = await axios.get('/api/admin/activity', {
+                            headers: { 'Authorization': `Bearer ${this.token}` }
+                        });
+                        this.activities = response.data;
+                    } catch (error) {
+                        console.error('Failed to load activity:', error);
+                    }
+                },
+                getActivityColor(status) {
+                    const colors = {
+                        success: 'border-green-500',
+                        failed: 'border-red-500',
+                        pending: 'border-yellow-500',
+                        qualified: 'border-blue-500'
+                    };
+                    return colors[status] || 'border-gray-300';
+                },
+                getStatusBadge(status) {
+                    const badges = {
+                        success: 'bg-green-100 text-green-800',
+                        failed: 'bg-red-100 text-red-800',
+                        pending: 'bg-yellow-100 text-yellow-800',
+                        qualified: 'bg-blue-100 text-blue-800'
+                    };
+                    return badges[status] || 'bg-gray-100 text-gray-800';
+                },
+                formatDate(timestamp) {
+                    return new Date(timestamp).toLocaleString();
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

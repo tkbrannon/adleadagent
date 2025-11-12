@@ -1,0 +1,41 @@
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Task Queue
+celery[redis]==5.3.4
+redis<5.0.0,>=4.5.2
+
+# Twilio
+twilio==8.10.0
+
+# Gmail
+google-auth==2.23.4
+google-auth-oauthlib==1.1.0
+google-api-python-client==2.108.0
+
+# Airtable
+pyairtable==2.2.1
+
+# Utilities
+python-dotenv==1.0.0
+python-multipart==0.0.6
+email-validator==2.1.0
+
+# Logging
+loguru==0.7.2
+
+# Authentication & Security & Auth
+python-jose[cryptography]==3.3.0
+passlib==1.7.4
+bcrypt==4.0.1
+python-multipart==0.0.6
+
+# Database for user management
+sqlalchemy==2.0.23
+alembic==1.13.0
+
+# CORS for frontend
+fastapi-cors==0.0.6

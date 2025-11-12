@@ -1,0 +1,176 @@
+name: mesh-lead-agent
+region: nyc
+
+# Redis Database
+databases:
+  - name: redis
+    engine: REDIS
+    production: true
+    version: "7"
+
+# FastAPI Web Service
+services:
+  - name: web
+    github:
+      repo: your-username/adleadagent
+      branch: main
+      deploy_on_push: true
+    
+    dockerfile_path: Dockerfile
+    
+    http_port: 8000
+    
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 30
+      period_seconds: 30
+      timeout_seconds: 10
+      success_threshold: 1
+      failure_threshold: 3
+    
+    envs:
+      - key: FASTAPI_HOST
+        value: "0.0.0.0"
+      - key: FASTAPI_PORT
+        value: "8000"
+      - key: REDIS_URL
+        value: "${redis.DATABASE_URL}"
+      - key: PUBLIC_WEBHOOK_URL
+        value: "${APP_URL}"
+      - key: ENVIRONMENT
+        value: "production"
+      
+      # Secrets (set these in DO dashboard)
+      - key: GMAIL_ADDRESS
+        scope: RUN_TIME
+        type: SECRET
+      - key: GMAIL_APP_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_ACCOUNT_SID
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_AUTH_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_PHONE_NUMBER
+        scope: RUN_TIME
+        type: SECRET
+      - key: AIRTABLE_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: AIRTABLE_BASE_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: AIRTABLE_TABLE_NAME
+        scope: RUN_TIME
+        type: SECRET
+      - key: CALENDLY_LINK
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_VOICE
+        value: "Polly.Joanna"
+      - key: POLLING_INTERVAL_SECONDS
+        value: "30"
+
+# Celery Worker
+workers:
+  - name: celery-worker
+    github:
+      repo: your-username/adleadagent
+      branch: main
+      deploy_on_push: true
+    
+    dockerfile_path: Dockerfile
+    
+    run_command: "celery -A app.celery_app worker --loglevel=info --concurrency=2"
+    
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    
+    envs:
+      - key: REDIS_URL
+        value: "${redis.DATABASE_URL}"
+      
+      # Same secrets as web service
+      - key: GMAIL_ADDRESS
+        scope: RUN_TIME
+        type: SECRET
+      - key: GMAIL_APP_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_ACCOUNT_SID
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_AUTH_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_PHONE_NUMBER
+        scope: RUN_TIME
+        type: SECRET
+      - key: AIRTABLE_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: AIRTABLE_BASE_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: AIRTABLE_TABLE_NAME
+        scope: RUN_TIME
+        type: SECRET
+      - key: CALENDLY_LINK
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_VOICE
+        value: "Polly.Joanna"
+
+  # Gmail Poller
+  - name: gmail-poller
+    github:
+      repo: your-username/adleadagent
+      branch: main
+      deploy_on_push: true
+    
+    dockerfile_path: Dockerfile
+    
+    run_command: "python poller.py"
+    
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    
+    envs:
+      - key: REDIS_URL
+        value: "${redis.DATABASE_URL}"
+      - key: POLLING_INTERVAL_SECONDS
+        value: "30"
+      
+      # Same secrets
+      - key: GMAIL_ADDRESS
+        scope: RUN_TIME
+        type: SECRET
+      - key: GMAIL_APP_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_ACCOUNT_SID
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_AUTH_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_PHONE_NUMBER
+        scope: RUN_TIME
+        type: SECRET
+      - key: AIRTABLE_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: AIRTABLE_BASE_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: AIRTABLE_TABLE_NAME
+        scope: RUN_TIME
+        type: SECRET
+      - key: CALENDLY_LINK
+        scope: RUN_TIME
+        type: SECRET
