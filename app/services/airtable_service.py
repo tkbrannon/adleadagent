@@ -24,21 +24,24 @@ class AirtableService:
         try:
             # Prepare record data - matching exact Airtable field names
             record_data = {
-                "Name": lead.name,
+                "Contact Name": lead.name,
                 "Email": lead.email,
                 "Phone": lead.phone,
-                "Status": lead.qualification_status.value,
-                "Notes": lead.qualification_reason or "",
-                "Source": lead.page_name,
+                "Call Status": lead.qualification_status.value,
+                "Call Notes": lead.qualification_reason or "",
+                "Segment": lead.page_name,
             }
             
             # Add call answers if available
             if lead.call_answers:
-                record_data["Years in Business"] = lead.call_answers.get("q1", "")
-                record_data["Team Size"] = lead.call_answers.get("q2", "")
-                record_data["Has Clients"] = lead.call_answers.get("q3", "")
-                record_data["Budget"] = lead.call_answers.get("q4", "")
-                record_data["Space Type"] = lead.call_answers.get("q5", "")
+                record_data["Call Notes"] = (
+                    f"{lead.qualification_reason or ''}\n\n"
+                    f"Years in Business: {lead.call_answers.get('q1', 'Not answered')}\n"
+                    f"Team Size: {lead.call_answers.get('q2', 'Not answered')}\n"
+                    f"Has Clients: {lead.call_answers.get('q3', 'Not answered')}\n"
+                    f"Budget: {lead.call_answers.get('q4', 'Not answered')}\n"
+                    f"Space Type: {lead.call_answers.get('q5', 'Not answered')}"
+                )
             
             # Create record
             record = self.table.create(record_data)
