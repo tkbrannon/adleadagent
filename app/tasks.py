@@ -189,23 +189,23 @@ def finalize_lead_record(call_sid: str, call_status: str, call_duration: int = 0
             page_url=call_data.get("page_url", "http://tour.meshcowork.com/private-offices/")
         )
         
-        # Save to Airtable
+        # Save to Airtable (but don't fail if it doesn't work)
         record_id = airtable_service.create_lead_record(lead_record)
         
         if record_id:
-            logger.info(f"Lead record finalized: {record_id}")
-            
-            # Send follow-up SMS
-            send_followup_sms.delay(
-                phone=lead_record.phone,
-                name=lead_record.name,
-                qualified=(qualification_status == LeadQualification.QUALIFIED)
-            )
-            
-            return True
+            logger.info(f"Lead record finalized in Airtable: {record_id}")
         else:
-            logger.error(f"Failed to create Airtable record for {call_sid}")
-            return False
+            logger.warning(f"Airtable save failed for {call_sid}, but continuing with SMS")
+        
+        # Send follow-up SMS regardless of Airtable status
+        send_followup_sms.delay(
+            phone=lead_record.phone,
+            name=lead_record.name,
+            qualified=(qualification_status == LeadQualification.QUALIFIED)
+        )
+        
+        logger.info(f"Lead processing completed for {call_sid}")
+        return True
     
     except Exception as e:
         logger.error(f"Error finalizing lead record: {e}")
