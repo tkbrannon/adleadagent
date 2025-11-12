@@ -11,6 +11,10 @@ until redis-cli ping > /dev/null 2>&1; do
 done
 echo "Redis is ready!"
 
+# Create admin user if it doesn't exist
+echo "Creating admin user..."
+python scripts/create_admin.py || echo "Admin user already exists or creation failed"
+
 # Start Celery worker in background
 celery -A app.celery_app worker --loglevel=info --concurrency=2 &
 

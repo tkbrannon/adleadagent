@@ -1,6 +1,9 @@
 """Create initial admin user"""
 import sys
-sys.path.insert(0, '/Users/tabaribrannon/Documents/mesh_agents/cmo/adleadagent')
+import os
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import SessionLocal, init_db
 from app.auth import create_user, UserCreate
